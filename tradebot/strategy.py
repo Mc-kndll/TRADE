@@ -21,9 +21,28 @@ def evaluate_signal(symbol: str, frame: pd.DataFrame, min_score: int = 80) -> Si
 
     last = frame.iloc[-1]
     previous = frame.iloc[-2]
-    required = ["close", "ema9", "ema20", "ema50", "rsi", "macd", "macd_signal", "atr", "vwap", "volume", "volume_sma20"]
+    required = [
+        "close",
+        "ema9",
+        "ema20",
+        "ema50",
+        "rsi",
+        "macd",
+        "macd_signal",
+        "atr",
+        "vwap",
+        "volume",
+        "volume_sma20",
+    ]
     if any(pd.isna(last[column]) for column in required):
-        return Signal(symbol, "WAIT", 0, float(last.get("close", 0) or 0), 0.0, ("indicators_not_ready",))
+        return Signal(
+            symbol,
+            "WAIT",
+            0,
+            float(last.get("close", 0) or 0),
+            0.0,
+            ("indicators_not_ready",),
+        )
 
     score = 0
     reasons: list[str] = []

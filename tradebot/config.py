@@ -31,6 +31,8 @@ class Settings:
     ib_client_id: int = _int("IB_CLIENT_ID", 17)
     ib_account: str = os.getenv("IB_ACCOUNT", "").strip()
     paper_account_only: bool = _bool("PAPER_ACCOUNT_ONLY", True)
+    reconnect_interval_seconds: int = _int("RECONNECT_INTERVAL_SECONDS", 5)
+    connect_timeout_seconds: int = _int("CONNECT_TIMEOUT_SECONDS", 10)
 
     dry_run: bool = _bool("DRY_RUN", True)
     auto_trading_enabled: bool = _bool("AUTO_TRADING_ENABLED", False)
@@ -44,9 +46,16 @@ class Settings:
     )
     bar_size: str = os.getenv("BAR_SIZE", "10 mins")
     history_duration: str = os.getenv("HISTORY_DURATION", "5 D")
-    scan_interval_seconds: int = _int("SCAN_INTERVAL_SECONDS", 60)
+    scan_interval_seconds: int = _int("SCAN_INTERVAL_SECONDS", 600)
+    scan_start_time: str = os.getenv("SCAN_START_TIME", "09:35")
+    order_start_time: str = os.getenv("ORDER_START_TIME", "09:45")
+    last_entry_time: str = os.getenv("LAST_ENTRY_TIME", "15:00")
+    scan_end_time: str = os.getenv("SCAN_END_TIME", "15:55")
+    send_scan_reports: bool = _bool("SEND_SCAN_REPORTS", True)
     use_rth: bool = _bool("USE_RTH", True)
     market_data_type: int = _int("MARKET_DATA_TYPE", 3)
+    exchange: str = os.getenv("EXCHANGE", "SMART")
+    currency: str = os.getenv("CURRENCY", "USD")
 
     risk_per_trade: float = _float("RISK_PER_TRADE", 0.005)
     max_position_value_pct: float = _float("MAX_POSITION_VALUE_PCT", 0.20)
@@ -55,11 +64,14 @@ class Settings:
     atr_stop_multiplier: float = _float("ATR_STOP_MULTIPLIER", 1.5)
     reward_risk_ratio: float = _float("REWARD_RISK_RATIO", 2.0)
     min_signal_score: int = _int("MIN_SIGNAL_SCORE", 80)
+    entry_order_type: str = os.getenv("ENTRY_ORDER_TYPE", "MKT").strip().upper()
+    entry_limit_offset_pct: float = _float("ENTRY_LIMIT_OFFSET_PCT", 0.001)
 
     telegram_bot_token: str = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
     telegram_chat_id: str = os.getenv("TELEGRAM_CHAT_ID", "").strip()
     database_path: Path = Path(os.getenv("DATABASE_PATH", "tradebot.db"))
     log_level: str = os.getenv("LOG_LEVEL", "INFO").upper()
+    log_path: Path = Path(os.getenv("LOG_PATH", "logs/tradebot.log"))
 
     def validate(self) -> None:
         if not 0 < self.risk_per_trade <= 0.02:
@@ -68,10 +80,39 @@ class Settings:
             raise ValueError("MAX_DAILY_LOSS_PCT must be between 0 and 0.10")
         if self.max_open_positions < 1:
             raise ValueError("MAX_OPEN_POSITIONS must be at least 1")
+        if self.scan_interval_seconds < 60:
+            raise ValueError("SCAN_INTERVAL_SECONDS must be at least 60")
+        schedule = [
+            self.scan_start_time,
+            self.order_start_time,
+            self.last_entry_time,
+            self.scan_end_time,
+        ]
+        try:
+            parsed_schedule = [
+                tuple(int(part) for part in value.split(":")) for value in schedule
+            ]
+        except ValueError as exc:
+            raise ValueError("Trading schedule values must use HH:MM") from exc
+        if any(
+            len(value) != 2 or not 0 <= value[0] <= 23 or not 0 <= value[1] <= 59
+            for value in parsed_schedule
+        ):
+            raise ValueError("Trading schedule values must use valid HH:MM times")
+        if parsed_schedule != sorted(parsed_schedule):
+            raise ValueError("Trading schedule times must be in chronological order")
+        if not 0 < self.max_position_value_pct <= 1:
+            raise ValueError("MAX_POSITION_VALUE_PCT must be between 0 and 1")
+        if self.atr_stop_multiplier <= 0 or self.reward_risk_ratio <= 0:
+            raise ValueError("ATR and reward/risk multipliers must be positive")
+        if not 0 <= self.min_signal_score <= 100:
+            raise ValueError("MIN_SIGNAL_SCORE must be between 0 and 100")
         if self.paper_account_only and self.ib_port != 7497:
             raise ValueError("Paper-only mode expects TWS paper port 7497")
         if self.auto_trading_enabled and self.dry_run:
             raise ValueError("AUTO_TRADING_ENABLED and DRY_RUN cannot both be true")
+        if self.entry_order_type not in {"MKT", "LMT"}:
+            raise ValueError("ENTRY_ORDER_TYPE must be MKT or LMT")
 
 
 settings = Settings()
