@@ -113,7 +113,6 @@ class IBKRBroker:
         values = {
             value.tag: value.value
             for value in self.ib.accountSummary(self.account)
-            if value.currency in {"USD", "BASE", ""}
         }
 
         def number(tag: str) -> float:
