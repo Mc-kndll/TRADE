@@ -70,6 +70,9 @@ class TelegramService:
     def order(self, text: str) -> None:
         self.send(f"ORDER\n{text}")
 
+    def report(self, text: str) -> None:
+        self.send(f"SCAN REPORT\n{text}")
+
     def error(self, text: str) -> None:
         self.send(f"ERROR\n{text}")
 
