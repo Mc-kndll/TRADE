@@ -43,7 +43,9 @@ def build_trade_plan(
     return TradePlan(quantity, round(entry, 2), stop, target, actual_risk)
 
 
-def daily_loss_limit_hit(starting_equity: float, current_equity: float, max_loss_pct: float) -> bool:
+def daily_loss_limit_hit(
+    starting_equity: float, current_equity: float, max_loss_pct: float
+) -> bool:
     if starting_equity <= 0:
         return True
     return current_equity <= starting_equity * (1 - max_loss_pct)

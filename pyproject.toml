@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tradebot"
-version = "0.1.0"
+version = "0.2.0"
 description = "IBKR TWS automated paper trading bot"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-  "ib_async>=2.1,<3",
-  "pandas>=2.2,<3",
-  "numpy>=2.0,<3",
+  "ib-insync>=0.9.86,<1",
+  "pandas>=2.2,<4",
+  "numpy>=1.26,<3",
   "python-dotenv>=1.0,<2",
   "requests>=2.32,<3",
 ]
@@ -23,12 +23,17 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["."]
+include = ["tradebot*"]
+exclude = ["tests*"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py310"
 
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["."]
 testpaths = ["tests"]
